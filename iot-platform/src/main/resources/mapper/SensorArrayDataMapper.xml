@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="org.ciwater.iotplatform.dao.SensorArrayDataMapper">
+    <resultMap id="SADataMap" type="SensorArrayData">
+        <result column="sad_utc_time" property="utcTime"></result>
+        <result column="sad_device_id" property="deviceId"></result>
+        <result column="sad_co" property="sensorCO"></result>
+        <result column="sad_humidity" property="sensorHumidity"></result>
+        <result column="sad_light" property="sensorLight"></result>
+        <result column="sad_lpg" property="sensorLPG"></result>
+        <result column="sad_motion" property="sensorMotion"></result>
+        <result column="sad_smoke" property="sensorSmoke"></result>
+        <result column="sad_temp" property="sensorTemp"></result>
+    </resultMap>
+
+    <resultMap id="SADataSubMap" type="SensorArrayDataSub">
+        <result column="sad_utc_time" property="utcTime"></result>
+        <result column="sad_device_id" property="deviceId"></result>
+        <result column="sad_humidity" property="sensorHumidity"></result>
+        <result column="sad_temp" property="sensorTemp"></result>
+    </resultMap>
+
+    <select id="getNUMSADataByDevId" resultMap="SADataMap" resultType="SensorArrayData">
+        select *
+        from schema_iot.sensor_array_data
+        where schema_iot.sensor_array_data.sad_device_id = #{dev_id} limit #{item_str}
+            , #{item_all};
+    </select>
+
+    <select id="getTSSADataByDevId" resultMap="SADataMap" resultType="SensorArrayData">
+        select *
+        from schema_iot.sensor_array_data
+        where schema_iot.sensor_array_data.sad_device_id = #{dev_id}
+          and schema_iot.sensor_array_data.sad_utc_time <![CDATA[>=]]> #{time_start}
+          and schema_iot.sensor_array_data.sad_utc_time <![CDATA[<=]]> #{time_end}
+    </select>
+
+    <select id="getAllSubData" resultMap="SADataSubMap" resultType="SensorArrayDataSub">
+        select *
+        from schema_iot.sensor_array_data_sub
+        order by sad_utc_time desc limit 50
+    </select>
+
+    <insert id="saveAllSubData">
+        insert into schema_iot.sensor_array_data_sub(sensor_array_data_sub.sad_utc_time,
+                                                     sensor_array_data_sub.sad_device_id,
+                                                     sensor_array_data_sub.sad_humidity,
+                                                     sensor_array_data_sub.sad_temp)
+        values (#{p1}, #{p2}, #{p3}, #{p4})
+    </insert>
+
+</mapper>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>登录</title>
+    <link th:href="@{/webjars/Semantic-UI/2.4.1/semantic.css}" rel="stylesheet">
+    <style>
+        body {
+            padding: 1em;
+        }
+    </style>
+</head>
+<body>
+<!--主容器-->
+<div class="ui container">
+    <!--导航栏-->
+    <div th:replace="~{common/top-bar::topBar}"></div>
+
+    <div class="ui segment">
+        <div style="text-align: center">
+            <h3 class="header">请登录</h3>
+        </div>
+        <div class="ui placeholder segment">
+            <div class="ui column very relaxed stackable grid">
+                <div class="column">
+                    <div class="ui form">
+                        <form th:action="@{/login}" method="post">
+                            <div class="field">
+                                <div class="ui left icon input">
+                                    <input type="text" placeholder="请输入用户名" name="username">
+                                    <i class="user icon"></i>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <div class="ui left icon input">
+                                    <input type="password" placeholder="请输入密码" name="password">
+                                    <i class="lock icon"></i>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <input type="submit" class="ui green basic submit button"/>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="ui segment" style="text-align: center">
+        <small>iot-platform.ciwater.org</small>
+    </div>
+</div>
+</body>
+</html>

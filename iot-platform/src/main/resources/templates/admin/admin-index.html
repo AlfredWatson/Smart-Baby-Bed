@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>首页</title>
+    <link th:href="@{/webjars/Semantic-UI/2.4.1/semantic.min.css}" rel="stylesheet">
+    <link th:href="@{/webjars/layui/2.6.8/css/layui.css}" rel="stylesheet">
+
+    <script type="text/javascript" th:src="@{/webjars/jquery/2.2.4/jquery.min.js}"></script>
+    <script type="text/javascript" th:src="@{/webjars/Semantic-UI/2.4.1/semantic.min.js}"></script>
+    <script type="text/javascript" th:src="@{/webjars/layui/2.6.8/layui.js}"></script>
+    <script type="text/javascript" th:src="@{/webjars/echarts/5.1.2/echarts.js}"></script>
+    <style>
+        body {
+            padding: 1em;
+        }
+    </style>
+</head>
+<body>
+
+<div class="ui container">
+    <!--导航栏-->
+    <div th:replace="~{common/top-bar::topBar}"></div>
+    <!--查询条件选择-->
+    <div class="ui segment">
+        <div class="ui four column stackable grid">
+            <div class="column">
+                <!--选择设备-->
+                <div class="ui dropdown labeled icon button"
+                     id="selectDev">
+                    <i class="angle down icon"></i>
+                    <span class="text">选择设备</span>
+                    <div class="menu">
+                        <div class="ui icon search input">
+                            <i class="search icon"></i>
+                            <input type="text" placeholder="搜索">
+                        </div>
+                        <div class="item" th:each="device :${devices}" th:text="${device.getDeviceMac()}"
+                             id="device" th:name="device"></div>
+                    </div>
+                </div>
+            </div><!--column 1 end-->
+
+            <div class="column">
+                <!--开始日期-->
+                <input type="text" class="layui-input" placeholder="请选择开始时间"
+                       id="startTime">
+            </div><!--column 2 end-->
+
+            <div class="column">
+                <!--时间段-->
+                <div class="field">
+                    <div class="ui dropdown labeled icon button"
+                         id="timePeriod">
+                        <i class="angle down icon"></i>
+                        <span class="text">请选择时间区间</span>
+                        <div class="menu">
+                            <div class="item" data-value="15m">0.5小时内</div>
+                            <div class="item" data-value="15m">1小时内</div>
+                            <div class="item" data-value="15m">12小时内</div>
+                            <div class="item" data-value="15m">24小时</div>
+                            <div class="item" data-value="15m">1周内</div>
+                        </div>
+                    </div>
+                </div>
+            </div><!--column 3 end-->
+
+            <div class="column">
+                <!--提交-->
+                <button class="ui positive button" id="uploadSadKSH">确定</button>
+            </div><!--column 4 end-->
+
+        </div><!--four column end-->
+
+    </div><!--ui segment-->
+
+    <div class="ui segment">
+        <div class="ui seven buttons">
+            <button id="saDataCO" class="ui red button">一氧化碳</button>
+            <button id="saDataHumidity" class="ui orange button">湿度</button>
+            <button id="saDataLight" class="ui yellow button">光</button>
+            <button id="saDataLGP" class="ui green button">液化石油气</button>
+            <button id="saDataMotion" class="ui blue button">运动</button>
+            <button id="saDataSmoke" class="ui grey button">烟</button>
+            <button id="saDataTemp" class="ui purple button">温度</button>
+        </div>
+    </div>
+
+    <div class="ui segment">
+        <div id="mainChart" style="width: 100%; height: 500px;"></div>
+    </div>
+
+</div><!--container end-->
+
+</body>
+
+<!--选择开始时间 js-->
+<script type="text/javascript">
+    layui.use('laydate', function () {
+        var laydate = layui.laydate;
+        // 日期时间选择器
+        laydate.render({
+            elem: '#startTime',
+            type: 'datetime',
+            format: 'yyyy-MM-dd HH:mm:ss',
+            min: '2020-07-11 23:59:59', //最小日期laydate.now()
+            max: '2030-12-31 23:59:59'  //最大日期
+        });
+    });
+</script>
+
+<!--semantic-ui相关js-->
+<script type="text/javascript">
+    let dataT;
+
+    $('.ui.dropdown').dropdown();
+
+    $('#uploadSadKSH').api({
+        contentType: 'UTF-8',
+        url: 'http://127.0.0.1:8080/getTSSAData',
+        onSuccess: function (devicesInfo) {
+            console.log(devicesInfo);
+        }
+    });
+
+    $("#f1").api({
+        method: 'POST',
+        url: 'http://127.0.0.1:8080/getTSSAData',
+        onSuccess: function (devicesInfo) {
+            console.log("ddd:" + devicesInfo);
+            dataT = devicesInfo + "";
+            console.log("ttt:" + dataT);
+        }
+    });
+
+    $(function () {
+        const showUrl = "http://127.0.0.1:8080/getTSSAData2";
+        $("#saDataCO").click(function () {
+            $.ajax({
+                type: 'post',
+                url: showUrl,
+                dataType: 'json',
+                success: function (data) {
+                    console.log(data);
+                    const divId = 'mainChart';
+                    const buttonId = 1;
+                    initChart(data, divId, buttonId);
+                }
+            });
+        });
+
+        $("#saDataHumidity").click(function () {
+            $.ajax({
+                type: 'post',
+                url: showUrl,
+                dataType: 'json',
+                success: function (data) {
+                    const divId = 'mainChart';
+                    const buttonId = 2;
+                    initChart(data, divId, buttonId);
+                }
+            });
+        });
+        $("#saDataLight").click(function () {
+            $.ajax({
+                type: 'post',
+                url: showUrl,
+                dataType: 'json',
+                success: function (data) {
+                    const divId = 'mainChart';
+                    const buttonId = 3;
+                    initChart(data, divId, buttonId);
+                }
+            });
+        });
+        $("#saDataLGP").click(function () {
+            $.ajax({
+                type: 'post',
+                url: showUrl,
+                dataType: 'json',
+                success: function (data) {
+                    const divId = 'mainChart';
+                    const buttonId = 4;
+                    initChart(data, divId, buttonId);
+                }
+            });
+        });
+        $("#saDataMotion").click(function () {
+            $.ajax({
+                type: 'post',
+                url: showUrl,
+                dataType: 'json',
+                success: function (data) {
+                    const divId = 'mainChart';
+                    const buttonId = 5;
+                    initChart(data, divId, buttonId);
+                }
+            });
+        });
+        $("#saDataSmoke").click(function () {
+            $.ajax({
+                type: 'post',
+                url: showUrl,
+                dataType: 'json',
+                success: function (data) {
+                    const divId = 'mainChart';
+                    const buttonId = 6;
+                    initChart(data, divId, buttonId);
+                }
+            });
+        });
+        $("#saDataTemp").click(function () {
+            $.ajax({
+                type: 'post',
+                url: showUrl,
+                dataType: 'json',
+                success: function (data) {
+                    const divId = 'mainChart';
+                    const buttonId = 7;
+                    initChart(data, divId, buttonId);
+                }
+            });
+        });
+
+        let myChart;
+
+        function initChart(data, divId, buttonId) {
+            // 解决"There is a chart instance already initialized on the dom."问题。
+            if (myChart != null && myChart != "" && myChart != undefined) {
+                myChart.dispose();//销毁
+            }
+            myChart = echarts.init(document.getElementById(divId));
+            myChart.setOption(getMyOption(data, buttonId));
+        }
+
+        function getMyOption(data, buttonId) {
+            let option;
+            switch (buttonId) {
+                case 1:
+                    option = get_SADataCO_Option(data);
+                    break;
+                case 2:
+                    option = get_SADataHumidity_Option(data);
+                    break;
+                case 3:
+                    option = get_SADataLight_Option(data);
+                    break;
+                case 4:
+                    option = get_SADataLGP_Option(data);
+                    break;
+                case 5:
+                    option = get_SADataMotion_Option(data);
+                    break;
+                case 6:
+                    option = get_SADataSmoke_Option(data);
+                    break;
+                case 7:
+                    option = get_SADataTemp_Option(data);
+                    break;
+            }
+            return option;
+        }
+
+        // 一氧化碳
+        function get_SADataCO_Option(data) {
+            let dataX = [], dataY = [];
+            for (let i = 0; i < data.length; i++) {
+                dataX[i] = data[i].utcTime;
+                dataY[i] = data[i].sensorCO;
+            }
+            // console.log("x:" + dataX);
+            // console.log("y:" + dataY);
+            const option = {
+                title: {
+                    text: '一氧化碳 单位:ppm (%)'
+                },
+                tooltip: {
+                    trigger: 'axis'
+                },
+                legend: {
+                    data: ['type1']
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    containLabel: true
+                },
+                toolbox: {
+                    feature: {
+                        saveAsImage: {}
+                    }
+                },
+                xAxis: {
+                    type: 'category',
+                    boundaryGap: false,
+                    data: dataX
+                },
+                yAxis: {
+                    type: 'value'
+                },
+                series: [
+                    {
+                        name: 'type1',
+                        type: 'line',
+                        stack: 'Total',
+                        data: dataY
+                    }
+                ]
+            };
+            return option;
+        };
+
+        // 湿度
+        function get_SADataHumidity_Option(data) {
+            let dataX = [], dataY = [];
+            for (let i = 0; i < data.length; i++) {
+                dataX[i] = data[i].utcTime;
+                dataY[i] = data[i].sensorHumidity;
+            }
+            // console.log("x:" + dataX);
+            // console.log("y:" + dataY);
+            const option = {
+                title: {
+                    text: '湿度'
+                },
+                tooltip: {
+                    trigger: 'axis'
+                },
+                legend: {
+                    data: ['type1']
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    containLabel: true
+                },
+                toolbox: {
+                    feature: {
+                        saveAsImage: {}
+                    }
+                },
+                xAxis: {
+                    type: 'category',
+                    boundaryGap: false,
+                    data: dataX
+                },
+                yAxis: {
+                    type: 'value'
+                },
+                series: [
+                    {
+                        name: 'type1',
+                        type: 'line',
+                        stack: 'Total',
+                        data: dataY
+                    }
+                ]
+            };
+            return option;
+        };
+
+        // 光照
+        function get_SADataLight_Option(data) {
+            let dataX = [], dataY = [];
+            for (let i = 0; i < data.length; i++) {
+                dataX[i] = data[i].utcTime;
+                // console.log(i + "和" + data[i].sensorLight);
+                if (data[i].sensorLight) {
+                    dataY[i] = 1;
+                } else {
+                    dataY[i] = 0;
+                }
+            }
+            // console.log("x:" + dataX);
+            // console.log("y:" + dataY);
+            const option = {
+                title: {
+                    text: '光照'
+                },
+                tooltip: {
+                    trigger: 'axis'
+                },
+                legend: {
+                    data: ['type1']
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    containLabel: true
+                },
+                toolbox: {
+                    feature: {
+                        saveAsImage: {}
+                    }
+                },
+                xAxis: {
+                    type: 'category',
+                    boundaryGap: false,
+                    data: dataX
+                },
+                yAxis: {
+                    type: 'value'
+                },
+                series: [
+                    {
+                        name: 'type1',
+                        type: 'line',
+                        stack: 'Total',
+                        data: dataY
+                    }
+                ]
+            };
+            return option;
+        };
+
+        // 液化气
+        function get_SADataLGP_Option(data) {
+            let dataX = [], dataY = [];
+            for (let i = 0; i < data.length; i++) {
+                dataX[i] = data[i].utcTime;
+                dataY[i] = data[i].sensorLPG;
+            }
+            // console.log("x:" + dataX);
+            // console.log("y:" + dataY);
+            const option = {
+                title: {
+                    text: '液化石油气浓度 单位:ppm (%)'
+                },
+                tooltip: {
+                    trigger: 'axis'
+                },
+                legend: {
+                    data: ['type1']
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    containLabel: true
+                },
+                toolbox: {
+                    feature: {
+                        saveAsImage: {}
+                    }
+                },
+                xAxis: {
+                    type: 'category',
+                    boundaryGap: false,
+                    data: dataX
+                },
+                yAxis: {
+                    type: 'value'
+                },
+                series: [
+                    {
+                        name: 'type1',
+                        type: 'line',
+                        stack: 'Total',
+                        data: dataY
+                    }
+                ]
+            };
+            return option;
+        };
+
+        // 运动
+        function get_SADataMotion_Option(data) {
+            let dataX = [], dataY = [];
+            for (let i = 0; i < data.length; i++) {
+                dataX[i] = data[i].utcTime;
+                if (data[i].sensorMotion) {
+                    dataY[i] = 1;
+                } else {
+                    dataY[i] = 0;
+                }
+            }
+            // console.log("x:" + dataX);
+            // console.log("y:" + dataY);
+            const option = {
+                title: {
+                    text: '是否移动'
+                },
+                tooltip: {
+                    trigger: 'axis'
+                },
+                legend: {
+                    data: ['type1']
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    containLabel: true
+                },
+                toolbox: {
+                    feature: {
+                        saveAsImage: {}
+                    }
+                },
+                xAxis: {
+                    type: 'category',
+                    boundaryGap: false,
+                    data: dataX
+                },
+                yAxis: {
+                    type: 'value'
+                },
+                series: [
+                    {
+                        name: 'type1',
+                        type: 'line',
+                        stack: 'Total',
+                        data: dataY
+                    }
+                ]
+            };
+            return option;
+        };
+
+        // 烟
+        function get_SADataSmoke_Option(data) {
+            let dataX = [], dataY = [];
+            for (let i = 0; i < data.length; i++) {
+                dataX[i] = data[i].utcTime;
+                dataY[i] = data[i].sensorSmoke;
+            }
+            // console.log("x:" + dataX);
+            // console.log("y:" + dataY);
+            const option = {
+                title: {
+                    text: '烟雾浓度 单位:ppm (%)'
+                },
+                tooltip: {
+                    trigger: 'axis'
+                },
+                legend: {
+                    data: ['type1']
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    containLabel: true
+                },
+                toolbox: {
+                    feature: {
+                        saveAsImage: {}
+                    }
+                },
+                xAxis: {
+                    type: 'category',
+                    boundaryGap: false,
+                    data: dataX
+                },
+                yAxis: {
+                    type: 'value'
+                },
+                series: [
+                    {
+                        name: 'type1',
+                        type: 'line',
+                        stack: 'Total',
+                        data: dataY
+                    }
+                ]
+            };
+            return option;
+        };
+
+        // 温度
+        function get_SADataTemp_Option(data) {
+            let dataX = [], dataY = [];
+            for (let i = 0; i < data.length; i++) {
+                dataX[i] = data[i].utcTime;
+                dataY[i] = data[i].sensorTemp;
+            }
+            // console.log("x:" + dataX);
+            // console.log("y:" + dataY);
+            const option = {
+                title: {
+                    text: '温度 单位:°F'
+                },
+                tooltip: {
+                    trigger: 'axis'
+                },
+                legend: {
+                    data: ['type1']
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    containLabel: true
+                },
+                toolbox: {
+                    feature: {
+                        saveAsImage: {}
+                    }
+                },
+                xAxis: {
+                    type: 'category',
+                    boundaryGap: false,
+                    data: dataX
+                },
+                yAxis: {
+                    type: 'value'
+                },
+                series: [
+                    {
+                        name: 'type1',
+                        type: 'line',
+                        stack: 'Total',
+                        data: dataY
+                    }
+                ]
+            };
+            return option;
+        };
+    })
+</script>
+</html>

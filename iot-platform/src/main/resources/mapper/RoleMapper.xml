@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="org.ciwater.iotplatform.dao.RoleMapper">
+    <resultMap id="roleMap" type="org.ciwater.iotplatform.pojo.Role">
+        <id property="roleId" column="role_id"></id>
+        <result property="roleName" column="role_name"></result>
+        <result property="roleDesc" column="role_describe"></result>
+    </resultMap>
+
+    <select id="getAllRoles" resultMap="roleMap"
+            resultType="org.ciwater.iotplatform.pojo.Role">
+        select *
+        from schema_authority.role
+    </select>
+
+    <insert id="setUserRoles">
+        insert into schema_authority.user_role(user_role.ur_user_id, user_role.ur_role_id)
+        values (#{userId},#{roleId})
+    </insert>
+</mapper>

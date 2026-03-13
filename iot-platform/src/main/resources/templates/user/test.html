@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8"/>
+    <link rel="stylesheet" type="text/css"
+          th:href="@{/webjars/Semantic-UI/2.4.1/semantic.min.css}">
+    <link rel="stylesheet" type="text/css"
+          th:href="@{/webjars/semantic-ui-calendar/0.0.8/dist/calendar.min.css}">
+    <script type="text/javascript"
+            th:src="@{/webjars/jquery/2.2.4/jquery.min.js}"></script>
+    <script type="text/javascript"
+            th:src="@{/webjars/jquery-serialize-object/2.1.0/jquery.serialize-object.min.js}"></script>
+    <script type="text/javascript"
+            th:src="@{/webjars/Semantic-UI/2.4.1/semantic.min.js}"></script>
+    <script type="text/javascript"
+            th:src="@{/webjars/semantic-ui-calendar/0.0.8/dist/calendar.min.js}"></script>
+</head>
+<body>
+<form class="ui form">
+    <div class="field">
+        <div class="ui calendar" id="example1">
+            <div class="ui input left icon">
+                <i class="calendar icon"></i>
+                <input type="text" name="myFuckingDate" placeholder="请选择开始时间">
+            </div>
+        </div>
+    </div>
+    <div class="ui submit button" id="myBtn">Submit</div>
+</form>
+<br/>
+</body>
+<script>
+    $('.ui.dropdown').dropdown();
+
+    $('#example1').calendar();
+
+    $.fn.api.settings.api = {
+        'sendDate' : '/sendDateTime'
+    };
+
+    $('#myBtn').api({
+        action: 'sendDate',
+        serializeForm: true,
+        method: 'POST',
+        data: {
+            foo: 'baz'
+        },
+        beforeSend: function (settings) {
+            // form data is editable in before send
+            // 如果什么都不填直接提交，就是6666-66-66-66:66
+            if (settings.data.myFuckingDate == '') {
+                settings.data.myFuckingDate = '6666-66-66-66:66';
+            }
+            // open console to inspect object
+            console.log(settings.data);
+            return settings;
+        }
+    });
+</script>
+</html>

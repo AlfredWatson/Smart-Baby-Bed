@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>首页</title>
+    <link rel="stylesheet" type="text/css"
+          th:href="@{/webjars/Semantic-UI/2.4.1/semantic.min.css}">
+    <link rel="stylesheet" type="text/css"
+          th:href="@{/webjars/semantic-ui-calendar/0.0.8/dist/calendar.min.css}">
+    <script type="text/javascript"
+            th:src="@{/webjars/jquery/2.2.4/jquery.min.js}"></script>
+    <script type="text/javascript"
+            th:src="@{/webjars/jquery-serialize-object/2.1.0/jquery.serialize-object.min.js}"></script>
+    <script type="text/javascript"
+            th:src="@{/webjars/Semantic-UI/2.4.1/semantic.min.js}"></script>
+    <script type="text/javascript"
+            th:src="@{/webjars/semantic-ui-calendar/0.0.8/dist/calendar.min.js}"></script>
+    <script type="text/javascript"
+            th:src="@{/webjars/echarts/5.1.2/echarts.js}"></script>
+    <style>
+        body {
+            padding: 1em;
+        }
+    </style>
+</head>
+<body>
+
+<div class="ui container">
+    <!--导航栏-->
+    <div th:replace="~{common/top-bar::topBar}"></div>
+
+    <!--指令栏-->
+    <div class="ui segment">
+        <div class="ui two buttons">
+            <button id="commandBtn01" class="ui orange button">指令一</button>
+            <button id="commandBtn02" class="ui purple button">指令二</button>
+        </div>
+    </div>
+
+    <!--展示数据栏-->
+    <div class="ui segment">
+        <div class="ui three buttons">
+            <button id="showAllDataBtn" class="ui yellow button">展示最新数据(50条)</button>
+            <button id="showDataBtn01" class="ui red button">温度</button>
+            <button id="showDataBtn02" class="ui blue button">湿度</button>
+        </div>
+    </div>
+
+    <!--展示数据-->
+    <div class="ui segment">
+        <div id="mainChart" style="width: 100%; height: 500px;"></div>
+    </div>
+
+</div><!--container end-->
+
+</body>
+
+<!--semantic-ui相关js-->
+<script type="text/javascript">
+    $('.ui.dropdown').dropdown();
+    $.fn.api.settings.api = {
+        'sendCommand01': '/sendMqttMessage-01',
+        'sendCommand02': '/sendMqttMessage-02',
+        'sendShowDataCommand00': '/getAllSubData',
+        'sendShowDataCommand01': '/getAllSubData',
+        'sendShowDataCommand02': '/getAllSubData',
+    };
+    // 指令按钮
+    $('#commandBtn01').api({
+        action: 'sendCommand01',
+        serializeForm: true,
+        method: 'POST',
+        onSuccess: function (settings) {
+            console.log("物联网1:" + settings.data);
+        }
+    });
+    $('#commandBtn02').api({
+        action: 'sendCommand02',
+        serializeForm: true,
+        method: 'POST',
+        onSuccess: function (settings) {
+            console.log("物联网2:" + settings.data);
+        }
+    });
+    // 展示数据按钮
+    $('#showAllDataBtn').api({
+        action: 'sendShowDataCommand00',
+        serializeForm: true,
+        method: 'POST',
+        onSuccess: function (data) {
+            for (let i = 0; i < data.length; i++) {
+                console.log("日期:" + data[i].utcTime);
+                console.log("设备id:" + data[i].deviceId);
+                console.log("湿度:" + data[i].sensorHumidity);
+                console.log("温度:" + data[i].sensorTemp);
+
+            }
+            divId = 'mainChart';
+            initChart(data, 'mainChart', 11);
+            return data;
+        }
+    });
+    $('#showDataBtn01').api({
+        action: 'sendShowDataCommand01',
+        serializeForm: true,
+        method: 'POST',
+        onSuccess: function (data) {
+            console.log("温度数据:" + data);
+        }
+    });
+    $('#showDataBtn02').api({
+        action: 'sendShowDataCommand02',
+        serializeForm: true,
+        method: 'POST',
+        onSuccess: function (data) {
+            console.log("湿度数据:" + data);
+        }
+    });
+
+    // echart画图
+    let myChart;
+    function initChart(data, divId, buttonId) {
+        // 解决"There is a chart instance already initialized on the dom."问题。
+        if (myChart != null && myChart != "" && myChart != undefined) {
+            myChart.dispose();//销毁
+        }
+        myChart = echarts.init(document.getElementById(divId));
+        myChart.setOption(getMyOption(data, buttonId));
+    };
+
+    function getMyOption(data, buttonId) {
+        let option;
+        switch (buttonId) {
+            case 11:
+                option = getAllDataOption(data);
+                break;
+            case 12:
+                option = getHumidityDataOption(data);
+                break;
+            case 13:
+                option = getTempDataOption(data);
+                break;
+        }
+        return option;
+    };
+
+    // 湿度
+    function getAllDataOption(data) {
+        let dataTemp = [], dataHum = [], dataX = [];
+        for (let i = 0; i < data.length; i++) {
+            dataX[i] = data[i].utcTime;
+            dataTemp[i] = data[i].sensorTemp;
+            dataHum[i] = data[i].sensorHumidity;
+        }
+        const option = {
+                color: ['#80ff8d', '#00ddff'],
+                title: {
+                    text: '温湿度动态图'
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'cross',
+                        label: {
+                            backgroundColor: '#6a7985'
+                        }
+                    }
+                },
+                legend: {
+                    data: ['温度', '湿度']
+                },
+                toolbox: {
+                    feature: {
+                        saveAsImage: {}
+                    }
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    containLabel: true
+                },
+                xAxis: [
+                    {
+                        type: 'category',
+                        boundaryGap: false,
+                        // x轴数据
+                        data: dataX
+                    }
+                ],
+                yAxis: [
+                    {
+                        type: 'value'
+                    }
+                ],
+                series: [
+                    {
+                        name: '温度',
+                        type: 'line',
+                        stack: 'Total',
+                        smooth: true,
+                        lineStyle: {
+                            width: 0
+                        },
+                        showSymbol: false,
+                        areaStyle: {
+                            opacity: 0.8,
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                {
+                                    offset: 0,
+                                    color: 'rgb(128, 255, 165)'
+                                },
+                                {
+                                    offset: 1,
+                                    color: 'rgb(1, 191, 236)'
+                                }
+                            ])
+                        },
+                        emphasis: {
+                            focus: 'series'
+                        },
+                        // y轴数据--温度数据
+                        data: dataTemp
+                    },
+                    {
+                        name: '湿度',
+                        type: 'line',
+                        stack: 'Total',
+                        smooth: true,
+                        lineStyle: {
+                            width: 0
+                        },
+                        showSymbol: false,
+                        areaStyle: {
+                            opacity: 0.8,
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                {
+                                    offset: 0,
+                                    color: 'rgb(0, 221, 255)'
+                                },
+                                {
+                                    offset: 1,
+                                    color: 'rgb(77, 119, 255)'
+                                }
+                            ])
+                        },
+                        emphasis: {
+                            focus: 'series'
+                        },
+                        // y轴数据--湿度
+                        data: dataHum
+                    }
+                ]
+            };
+        return option;
+    };
+
+</script>
+</html>
